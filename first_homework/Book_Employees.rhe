@@ -52,7 +52,7 @@ Entity BookTopic
 
 Entity Employee  
     {
-        ShortString Name { Required; };
+        ShortString Name { Required; }
         Integer VAT { Unique; }
     }
 
