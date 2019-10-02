@@ -80,6 +80,8 @@ Entity EmployeeInDepartment
     {
         Reference Employee { Detail; }
         Reference Department { Required; }
+        
+        UniqueMultiple 'Employee Department';
     }
 
 
