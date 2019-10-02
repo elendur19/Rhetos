@@ -1,1 +1,1 @@
-Rhetos homework repo
+Rhetos homework repository
