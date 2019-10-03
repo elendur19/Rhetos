@@ -52,7 +52,7 @@ Entity BookTopic
 
 Entity Employee  
     {
-        ShortString Name { Required; };
+        ShortString Name { Required; }
         Integer VAT { Unique; }
     }
 
@@ -80,6 +80,8 @@ Entity EmployeeInDepartment
     {
         Reference Employee { Detail; }
         Reference Department { Required; }
+        
+        UniqueMultiple 'Employee Department';
     }
 
 

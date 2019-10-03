@@ -1,6 +1,7 @@
 Module Bookstore;
 Entity Bookstore.Book;  
-ShortString Bookstore.Book.Code { AutoCode; } 
+ShortString Bookstore.Book.Code;
+AutoCode Bookstore.Book.Code;
 ShortString Bookstore.Book.Title;  
 Integer Bookstore.Book.NumberOfPages;
 ItemFilter Bookstore.Book.CommonMisspelling 'book => book.Title.Contains("curiousity")';
