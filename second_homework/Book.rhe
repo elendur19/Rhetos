@@ -1,0 +1,121 @@
+Module Bookstore
+{
+    Entity Book 
+    {
+        ShortString Code { AutoCode; DenyUserEdit; DefaultValue 'item => "B+++"'; }  
+        ShortString Title { Required; }
+        Integer NumberOfPages { MinValue 10; MaxValue 2000; }
+        DateTime CreatedAt { CreationTime; DenyUserEdit; }
+        // gives update when was the last time book name changed
+        DateTime Modified { ModificationTimeOf Bookstore.Book.Title; }
+
+        ItemFilter CommonMisspelling 'book => book.Title.Contains("curiousity")';
+        InvalidData CommonMisspelling 'It is not allowed to enter misspelled word "curiousity".';
+        // N:1 relationship
+        Reference Author Bookstore.Person;
+
+
+        Logging  
+            {
+                Log Bookstore.Book.Title;
+                Log Bookstore.Book.NumberOfPages;
+            }
+    }
+ 
+    Entity Person 
+    {
+        ShortString Name;
+        Deactivatable;
+        Logging  { AllProperties; }
+    }
+ 
+    Entity Comment
+    {
+        Reference Book { Detail; }
+        LongString Text;
+    }
+ 
+    Entity ChildrensBook
+    {
+        Extends Bookstore.Book;
+        
+        Integer AgeFrom;
+        Integer AgeTo;
+        IntegerRange AgeFrom AgeTo; // A simple validation.
+    }
+ 
+    Entity ForeignBook 
+    {
+        Extends Bookstore.Book;
+ 
+        ShortString OriginalLanguage; 
+ 
+        Reference Translator Bookstore.Person;
+    }
+ 
+    Entity Topic
+    {
+        ShortString Name { Unique; Required; }
+    }
+ 
+    Entity BookTopic
+    {
+        Reference Book { Detail; }
+        Reference Topic { Required; }
+ 
+        UniqueMultiple 'Book Topic';
+    }
+
+    Browse TitlesAndAuthors Bookstore.Book
+        {
+            Take Title;
+            Take 'Author.Name';
+            Take 'Extension_ForeignBook.Translator.Name';
+            Take NumberOfComments 'Extension_BookInfo.NumberOfComments';
+        }
+
+    Browse BooksAuthorsTopics Bookstore.Book
+        {
+            Take Title;
+            Take 'Author.Name';
+            Take NumberOfTopics 'Extension_BookTopics.NumberOfTopics';
+        }
+
+
+    SqlQueryable BookInfo
+    "
+        SELECT
+            b.ID,
+            NumberOfComments = COUNT(c.ID)
+        FROM
+            Bookstore.Book AS b
+            LEFT JOIN Bookstore.Comment AS c ON c.BookID = b.ID
+        GROUP BY
+            b.ID
+    "
+{
+    Extends Bookstore.Book;
+    Integer NumberOfComments;
+
+    AutodetectSqlDependencies;
+}
+
+    SqlQueryable BookTopics
+        "
+            SELECT 
+                b.ID,
+                NumberOfTopics = COUNT(bt.ID)
+            FROM
+                Bookstore.Book AS b
+                LEFT JOIN Bookstore.BookTopic AS bt ON bt.BookID = b.ID
+            GROUP BY
+                b.ID
+        "
+{
+    Extends Bookstore.Book;
+    Integer NumberOfTopics;
+
+    AutodetectSqlDependencies;
+}
+
+}
