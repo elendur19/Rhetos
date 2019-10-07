@@ -1,0 +1,178 @@
+Module Bookstore
+{
+    Entity Book 
+    {
+        ShortString Code { AutoCode; DenyUserEdit; DefaultValue 'item => "B+++"'; }  
+        ShortString Title { Required; }
+        Integer NumberOfPages { MinValue 10; MaxValue 2000; }
+        ItemFilter CommonMisspelling 'book => book.Title.Contains("curiousity")';
+        InvalidData CommonMisspelling 'It is not allowed to enter misspelled word "curiousity".';
+        
+    	// N:1 relationship
+        Reference Author Bookstore.Person;
+        
+        DateTime CreatedAt { CreationTime; DenyUserEdit; }
+        // gives update when was the last time book name changed
+        DateTime Modified { ModificationTimeOf Bookstore.Book.Title; }
+
+        // Item filter for long books; 
+        // web API returns books that have more or equal than 500 pages
+        ItemFilter LongBooks 'item => item.NumberOfPages >= 500';
+
+        // composable filter for short books
+        // web API returns books than have less than 500 pages
+        ComposableFilterBy ShortBooks '(query, repository, parameter) =>
+            {
+                return query.Where(item => item.NumberOfPages < 500);
+            }';
+
+
+        FilterBy LongBooksWithKnownAuthor '(repository, parameter) => 
+            {
+                var query = repository.Bookstore.Book.Query(item => item.NumberOfPages >= 500);
+
+                if(parameter.KnownAuthor == true) {
+                    query = query.Where(item => item.Author.ID != null );
+                }
+                Book[] books = query.ToSimple().ToArray();
+                
+                return books;
+            }';
+    
+        Logging  
+            {
+                Log Bookstore.Book.Title;
+                Log Bookstore.Book.NumberOfPages;
+            }
+    }
+
+     SqlView BooksWithAuthor 
+        "
+            SELECT b.ID, b.Title, b.NumberOfPages, a.Name 
+            FROM Bookstore.Book AS b
+            JOIN Bookstore.Person AS a ON b.AuthorID = a.ID
+        " 
+            {
+                AutoDetectSqlDependencies;
+            }
+
+    Parameter ShortBooks
+        {
+
+        }
+
+    Parameter LongBooksWithKnownAuthor
+        {
+            Bool KnownAuthor;
+        }
+ 
+    Entity Person 
+    {
+        ShortString Name;
+        Deactivatable;
+        Logging  { AllProperties; }
+    }
+ 
+    Entity Comment
+    {
+        Reference Book { Detail; }
+        LongString Text;
+    }
+ 
+    Entity ChildrensBook
+    {
+        Extends Bookstore.Book;
+        
+        Integer AgeFrom;
+        Integer AgeTo;
+        IntegerRange AgeFrom AgeTo; // A simple validation.
+    }
+ 
+    Entity ForeignBook 
+    {
+        Extends Bookstore.Book;
+ 
+        ShortString OriginalLanguage; 
+ 
+        Reference Translator Bookstore.Person;
+    }
+ 
+    Entity Topic
+    {
+        ShortString Name { Unique; Required; }
+    }
+ 
+    Entity BookTopic
+    {
+        Reference Book { Detail; }
+        Reference Topic { Required; }
+ 
+        UniqueMultiple 'Book Topic';
+    }
+
+    Browse TitlesAndAuthors Bookstore.Book
+        {
+            Take Title;
+            Take 'Author.Name';
+            Take 'Extension_ForeignBook.Translator.Name';
+            Take NumberOfComments 'Extension_BookInfo.NumberOfComments';
+        }
+
+    Browse BooksAuthorsTopics Bookstore.Book
+        {
+            Take Title;
+            Take 'Author.Name';
+            Take NumberOfTopics 'Extension_BookTopics.NumberOfTopics';
+        }
+
+    SqlQueryable BooksWithAuthorQuery 
+        "
+            SELECT *
+
+            FROM Bookstore.BooksWithAuthor
+        "
+        {
+            Extends Bookstore.Book;
+            AutodetectSqlDependencies;
+            ShortString Title;
+            Integer NumberOfPages;
+            ShortString Name;
+        }
+
+    SqlQueryable BookInfo
+    "
+        SELECT
+            b.ID,
+            NumberOfComments = COUNT(c.ID)
+        FROM
+            Bookstore.Book AS b
+            LEFT JOIN Bookstore.Comment AS c ON c.BookID = b.ID
+        GROUP BY
+            b.ID
+    "
+{
+    Extends Bookstore.Book;
+    Integer NumberOfComments;
+
+    AutodetectSqlDependencies;
+}
+
+    SqlQueryable BookTopics
+        "
+            SELECT 
+                b.ID,
+                NumberOfTopics = COUNT(bt.ID)
+            FROM
+                Bookstore.Book AS b
+                LEFT JOIN Bookstore.BookTopic AS bt ON bt.BookID = b.ID
+            GROUP BY
+                b.ID
+        "
+{
+    Extends Bookstore.Book;
+    Integer NumberOfTopics;
+
+    AutodetectSqlDependencies;
+}
+
+}

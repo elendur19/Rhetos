@@ -1,0 +1,149 @@
+Module Bookstore
+{
+    Entity Book
+    {
+        ShortString Code { Unique; Required; }
+        ShortString Title { Required; }
+        Integer NumberOfPages;
+        
+        Reference Author Bookstore.Person;
+        Reference Employee Bookstore.Employee;
+
+        DateTime Created { CreationTime; }
+        DateTime LastUpdate { LastModificationTime; }
+
+        RowPermissions
+        {
+            AllowRead AllEmployees 'context =>
+                {
+                    /*List<Employee> allEmployees = context.Repository
+                        .Bookstore.Employee.ToList();*/
+
+                        return book => book.Employee.ID != null;
+                }';
+
+            Allow EmployeesBook 'context => 
+                {
+                    Guid employeeId = context.Repository
+                        .Bookstore.Employee.Query()
+                        .Where(e => e.Name == context.UserInfo.UserName)
+                        .Select( e => e.ID)
+                        .SingleOrDefault();
+                    return book => book.Employee.ID == employeeId;
+                }';
+
+        }
+        
+    
+        SaveMethod 
+        {
+            Initialization SetLastUpdateToCurrentTime
+            '
+                foreach(var item in insertedNew.Concat(updatedNew)) 
+                    item.LastUpdate = DateTime.Now;
+            ';
+        }
+
+
+    }
+
+    Entity Person
+    {
+        ShortString Name;
+    }
+
+    Entity Comment
+    {
+        LongString Text;
+        Reference Book { Detail; }
+
+        RowPermissions
+        {
+                
+            Allow EditComment 'context =>
+                {
+                    Guid employeeId = context.Repository
+                        .Bookstore.Employee.Query()
+                        .Where(e => e.Name == context.UserInfo.UserName)
+                        .Select(e => e.ID)
+                        .SingleOrDefault();
+
+                    return comment => comment.Book.Employee.ID == employeeId;
+                }';
+
+            AllowRead ReadComment 'context =>
+                {
+                    return comment => comment.Book.Employee.ID != null;
+                }';
+
+            
+
+        }
+    }
+
+
+    Entity ChildrensBook
+    {
+        Extends Bookstore.Book;
+
+        Integer AgeFrom;
+        Integer AgeTo;
+        IntegerRange AgeFrom AgeTo; // A simple validation.
+    }
+
+    Entity ForeignBook
+    {
+        Extends Bookstore.Book;
+
+        ShortString OriginalLanguage;
+        Reference Translator Bookstore.Person;
+    }
+
+    Entity Topic
+    {
+        ShortString Name { Unique; Required; }
+    }
+
+    Entity BookTopic
+    {
+        Reference Book { Detail; }
+        Reference Topic { Required; }
+
+        UniqueMultiple 'Book Topic';
+    }
+
+    Entity Employee  
+    {
+        ShortString Name { Required; }
+        Integer VAT { Unique; }
+
+    }
+
+    Entity Manager 
+        {
+            Extends Bookstore.Employee;
+
+            LongString Bonuses;
+        }
+
+    Entity Education
+        {
+            Reference Book  { Detail; }
+            Date DateRecord;
+            LongString Description;
+        }
+
+    Entity Department
+        {
+            ShortString Code { Unique; Required; }
+            LongString Description;
+        }
+
+    Entity EmployeeInDepartment 
+        {
+            Reference Employee { Detail; }
+            Reference Department { Required; }
+        }
+
+
+    }
