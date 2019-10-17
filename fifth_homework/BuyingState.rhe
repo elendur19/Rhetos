@@ -1,0 +1,31 @@
+Module Bookstore
+{
+    Hardcoded BuyingStatus
+    {
+        Entry Considering;
+        Entry Decided;
+        Entry Bought;
+    }
+
+    SqlQueryable ComputeBuyingState <SQL\ComputeBuyingState.sql>
+    {
+        Extends Bookstore.Buying;
+        Reference Status Bookstore.BuyingStatus;
+
+        ChangesOnLinkedItems Bookstore.DecidedToBuy.Buying;
+        ChangesOnLinkedItems Bookstore.Payed.Buying;
+        
+        AutodetectSqlDependencies;
+    }
+
+    Entity BuyingCurrentState
+    {
+        ComputedFrom Bookstore.ComputeBuyingState
+        {
+            KeepSynchronized;
+            AllProperties;
+        }
+    }
+
+
+}

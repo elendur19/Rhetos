@@ -1,0 +1,33 @@
+Module Bookstore
+{
+    Polymorphic BuyingEvent
+    {
+        DateTime EffectiveSince;
+        Reference Buying;
+        Reference NewStatus Bookstore.BuyingStatus;
+    }
+
+    Entity DecidedToBuy
+    {
+        DateTime EffectiveSince { CreationTime; }
+        Reference Buying;
+
+        Is Bookstore.BuyingEvent
+        {
+            Implements Bookstore.BuyingEvent.NewStatus "Bookstore.BuyingStatus_Decided()";
+        }
+    }
+
+        Entity Payed
+    {
+        DateTime EffectiveSince { CreationTime; }
+        Reference Buying;
+
+        Is Bookstore.BuyingEvent
+        {
+            Implements Bookstore.BuyingEvent.NewStatus "Bookstore.BuyingStatus_Bought()";
+        }
+    }
+
+
+}

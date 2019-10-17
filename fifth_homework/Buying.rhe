@@ -1,0 +1,28 @@
+Module Bookstore 
+{
+    Entity Buying
+    {
+        ShortString TargetAdress;
+        DateTime Bought;
+        DateTime CreatedAt { CreationTime; }
+
+        Integer quantity;
+
+        Is Bookstore.BuyingEvent 'Creating'
+        {
+            Implements Bookstore.BuyingEvent.EffectiveSince "CreatedAt";
+            Implements Bookstore.BuyingEvent.Buying "ID";
+            Implements Bookstore.BuyingEvent.NewStatus "Bookstore.BuyingStatus_Considering()"; 
+        }
+    }
+
+        Entity WantedBook
+        {
+            Reference Buying { Detail; }
+            Reference Book;
+        }
+
+        
+
+    
+}
